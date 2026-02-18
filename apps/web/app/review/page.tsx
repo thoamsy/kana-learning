@@ -60,6 +60,7 @@ export default function ReviewPage() {
                 key={option}
                 type="button"
                 data-testid={`review-option-${optionIndex + 1}`}
+                data-correct={option === question.correctAnswer ? "true" : "false"}
                 className={selected === option ? "option selected" : "option"}
                 onClick={() => setSelected(option)}
                 disabled={isSubmitting}

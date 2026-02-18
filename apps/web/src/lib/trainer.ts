@@ -15,6 +15,28 @@ export type QuestionMode = "kana-to-reading" | "reading-to-kana";
 const storage = new DexieWebStorage();
 const cardById = new Map(wordCards.map((card) => [card.id, card]));
 
+function hashSeed(seed: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function seededShuffle<T>(items: T[], seed: string): T[] {
+  const list = [...items];
+  let state = hashSeed(seed) || 1;
+
+  for (let index = list.length - 1; index > 0; index -= 1) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    const swapIndex = state % (index + 1);
+    [list[index], list[swapIndex]] = [list[swapIndex], list[index]];
+  }
+
+  return list;
+}
+
 function toDateKey(iso: string): string {
   return iso.slice(0, 10);
 }
@@ -25,12 +47,17 @@ function daysBetweenKeys(startKey: string, endKey: string): number {
   return Math.round((start - end) / (24 * 60 * 60 * 1000));
 }
 
-export function getStudyCards(script?: "hiragana" | "katakana", limit = 20): EmojiWordCard[] {
+export function getStudyCards(
+  script?: "hiragana" | "katakana",
+  limit = 20,
+  shuffleSeed?: string
+): EmojiWordCard[] {
   const pool = script ? wordCards.filter((card) => card.script === script) : wordCards;
-  return pool.slice(0, limit);
+  const source = shuffleSeed ? seededShuffle(pool, shuffleSeed) : pool;
+  return source.slice(0, limit);
 }
 
-export function buildQuestion(card: EmojiWordCard, mode: QuestionMode): {
+export function buildQuestion(card: EmojiWordCard, mode: QuestionMode, shuffleSeed?: string): {
   prompt: string;
   correctAnswer: string;
   options: string[];
@@ -45,7 +72,7 @@ export function buildQuestion(card: EmojiWordCard, mode: QuestionMode): {
   );
 
   const distractors = allValues.filter((value) => value !== correctAnswer).slice(0, 3);
-  const options = [correctAnswer, ...distractors];
+  const options = seededShuffle([correctAnswer, ...distractors], shuffleSeed ?? `${card.id}:${mode}`);
   const prompt = mode === "kana-to-reading" ? card.kana : card.romaji;
 
   return { prompt, correctAnswer, options };

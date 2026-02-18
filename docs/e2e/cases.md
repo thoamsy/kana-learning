@@ -10,8 +10,10 @@
 - `data-testid="streak-value"`: shows current streak.
 - `data-testid="study-question"`: active prompt text.
 - `data-testid="study-option-1"` / `study-option-2`: deterministic option targets for e2e.
+- `data-correct="true|false"` on study/review options: explicit correctness locator for stable e2e actions.
 - `data-testid="study-step"`: current step (e.g. `3/12`).
 - `data-testid="study-progress-bar"`: progress bar width reflects step.
+- `data-testid="study-complete-title"`: appears only after finishing all study questions.
 - `data-testid="review-due-count"`: due cards number on review page.
 - `data-testid="review-option-1"`: deterministic review submit target.
 - `data-testid="collection-unlocked-count"`: unlocked card count.
@@ -60,3 +62,20 @@
 4. Assert toast auto-hides within ~1.5s and step does not advance automatically.
 5. Open `/review`.
 6. Assert failed katakana item appears as due.
+
+## Case E2E-007 Option Shuffle
+1. Open `/study`.
+2. Across multiple questions, record the index of `data-correct="true"`.
+3. Assert the correct index is not always `1`.
+
+## Case E2E-008 Session Completion (No Loop)
+1. Open `/study`.
+2. Answer 12 questions correctly.
+3. Assert `study-step` is `12/12`.
+4. Assert `study-complete-title` is visible.
+5. Assert `study-question` is no longer present.
+
+## Case E2E-009 Mobile Above-The-Fold Fit
+1. Set viewport to `390x844`.
+2. Open `/study`.
+3. Assert question, options, and `Next` button bottom are within viewport height.
