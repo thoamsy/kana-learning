@@ -14,5 +14,8 @@
     "e2e:smoke": "scripts/e2e/agent-browser-smoke.sh",
     "e2e:regression": "scripts/e2e/agent-browser-regression.sh",
     "dev:web": "pnpm --filter @kana/web dev"
+  },
+  "dependencies": {
+    "next": "^15.5.12"
   }
 }
