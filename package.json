@@ -1,0 +1,18 @@
+{
+  "name": "kana-trainer",
+  "private": true,
+  "version": "0.0.1",
+  "packageManager": "pnpm@10.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "e2e:smoke": "scripts/e2e/agent-browser-smoke.sh",
+    "e2e:regression": "scripts/e2e/agent-browser-regression.sh",
+    "dev:web": "pnpm --filter @kana/web dev"
+  }
+}

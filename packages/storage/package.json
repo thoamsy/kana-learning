@@ -1,0 +1,11 @@
+{
+  "name": "@kana/storage",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "dexie": "^4.0.11"
+  }
+}
