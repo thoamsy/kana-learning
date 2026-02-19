@@ -37,6 +37,22 @@ function seededShuffle<T>(items: T[], seed: string): T[] {
   return list;
 }
 
+function dedupeCardsByWord(cards: EmojiWordCard[]): EmojiWordCard[] {
+  const seen = new Set<string>();
+  const unique: EmojiWordCard[] = [];
+
+  for (const card of cards) {
+    const signature = `${card.script}:${card.kana}:${card.romaji}`;
+    if (seen.has(signature)) {
+      continue;
+    }
+    seen.add(signature);
+    unique.push(card);
+  }
+
+  return unique;
+}
+
 function toDateKey(iso: string): string {
   return iso.slice(0, 10);
 }
@@ -53,7 +69,8 @@ export function getStudyCards(
   shuffleSeed?: string
 ): EmojiWordCard[] {
   const pool = script ? wordCards.filter((card) => card.script === script) : wordCards;
-  const source = shuffleSeed ? seededShuffle(pool, shuffleSeed) : pool;
+  const uniquePool = dedupeCardsByWord(pool);
+  const source = shuffleSeed ? seededShuffle(uniquePool, shuffleSeed) : uniquePool;
   return source.slice(0, limit);
 }
 
@@ -71,7 +88,10 @@ export function buildQuestion(card: EmojiWordCard, mode: QuestionMode, shuffleSe
     )
   );
 
-  const distractors = allValues.filter((value) => value !== correctAnswer).slice(0, 3);
+  const distractors = seededShuffle(
+    allValues.filter((value) => value !== correctAnswer),
+    `${shuffleSeed ?? `${card.id}:${mode}`}:distractors`
+  ).slice(0, 3);
   const options = seededShuffle([correctAnswer, ...distractors], shuffleSeed ?? `${card.id}:${mode}`);
   const prompt = mode === "kana-to-reading" ? card.kana : card.romaji;
 

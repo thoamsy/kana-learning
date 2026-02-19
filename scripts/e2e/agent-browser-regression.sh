@@ -180,11 +180,19 @@ ab open "${BASE_URL}/__test/reset"
 ab wait --load networkidle
 ab open "${BASE_URL}/study"
 ab wait --load networkidle
+rm -f /tmp/kana-study-prompts.txt
 for _ in $(seq 1 12); do
+  ab get text "[data-testid='study-question']" >> /tmp/kana-study-prompts.txt
   ab click "[data-correct='true']"
   ab click "button:has-text('Next')"
   ab wait 900
 done
+unique_prompts="$(sort /tmp/kana-study-prompts.txt | uniq | wc -l | tr -dc '0-9')"
+if [[ "${unique_prompts}" -lt 12 ]]; then
+  echo "Expected 12 unique prompts in one session, got ${unique_prompts}" >&2
+  cat /tmp/kana-study-prompts.txt >&2
+  exit 1
+fi
 ab get text "[data-testid='study-step']" > /tmp/kana-study-step-final.txt
 rg -q "12/12" /tmp/kana-study-step-final.txt
 ab get text "[data-testid='study-complete-title']" > /tmp/kana-study-complete-title.txt

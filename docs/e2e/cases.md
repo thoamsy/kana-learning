@@ -41,7 +41,7 @@
 3. Assert `study-question` exists.
 4. Select an option and click `Next`.
 5. Assert top toast appears with `Correct` or `Incorrect`.
-6. For a correct answer, verify auto-advance within 800ms.
+6. For a correct answer, verify auto-advance after pronunciation playback (or immediately if speech is unavailable).
 7. Verify question mode can switch across rounds:
    - kana -> reading
    - reading -> kana
@@ -96,6 +96,11 @@
 3. Assert `study-step` is `12/12`.
 4. Assert `study-complete-title` is visible.
 5. Assert `study-question` is no longer present.
+
+## Case E2E-008b Session Cards Are Unique
+1. Open `/study`.
+2. Record all 12 prompt texts while answering correctly.
+3. Assert 12 prompts are unique (no repeated question in one session).
 
 ## Case E2E-009 Mobile Above-The-Fold Fit
 1. Set viewport to `390x844`.

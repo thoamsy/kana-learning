@@ -17,7 +17,7 @@ export default function StudyPage() {
   const [selected, setSelected] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const autoNextTimerRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   const totalQuestions = cards.length;
 
   useEffect(() => {
@@ -28,10 +28,9 @@ export default function StudyPage() {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
-      if (autoNextTimerRef.current !== null) {
-        window.clearTimeout(autoNextTimerRef.current);
-      }
+      isMountedRef.current = false;
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -42,10 +41,6 @@ export default function StudyPage() {
     setIndex(0);
     setSelected("");
     setIsTransitioning(false);
-    if (autoNextTimerRef.current !== null) {
-      window.clearTimeout(autoNextTimerRef.current);
-      autoNextTimerRef.current = null;
-    }
   }, [cards]);
 
   const isComplete = totalQuestions > 0 && index >= totalQuestions;
@@ -56,7 +51,33 @@ export default function StudyPage() {
   const progressPercent = totalQuestions === 0 ? 0 : Math.round((currentStep / totalQuestions) * 100);
   const isBusy = isSubmitting || isTransitioning || isComplete;
 
-  function speakJapanese(text: string): void {
+  function waitForVoices(timeoutMs = 350): Promise<void> {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      return Promise.resolve();
+    }
+
+    const synth = window.speechSynthesis;
+    if (synth.getVoices().length > 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) {
+          return;
+        }
+        done = true;
+        synth.removeEventListener("voiceschanged", finish);
+        window.clearTimeout(timeoutId);
+        resolve();
+      };
+      const timeoutId = window.setTimeout(finish, timeoutMs);
+      synth.addEventListener("voiceschanged", finish);
+    });
+  }
+
+  async function speakJapanese(text: string): Promise<void> {
     if (
       typeof window === "undefined" ||
       !("speechSynthesis" in window) ||
@@ -65,20 +86,39 @@ export default function StudyPage() {
       return;
     }
 
+    if (typeof navigator !== "undefined" && navigator.webdriver) {
+      return;
+    }
+
     try {
-      window.speechSynthesis.cancel();
+      const synth = window.speechSynthesis;
+      await waitForVoices();
+      synth.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "ja-JP";
       utterance.rate = 0.92;
-      const voices = window.speechSynthesis.getVoices();
+      const voices = synth.getVoices();
       const japaneseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ja"));
       if (japaneseVoice) {
         utterance.voice = japaneseVoice;
       }
-      if (typeof navigator !== "undefined" && navigator.webdriver) {
-        return;
-      }
-      window.speechSynthesis.speak(utterance);
+
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const fallbackMs = Math.min(Math.max(text.length * 240, 1000), 2800);
+        const finish = () => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve();
+        };
+        const timeoutId = window.setTimeout(finish, fallbackMs);
+        utterance.onend = finish;
+        utterance.onerror = finish;
+        synth.speak(utterance);
+      });
     } catch {
       // Ignore speech API failures and keep the study flow responsive.
     }
@@ -91,6 +131,7 @@ export default function StudyPage() {
 
     setIsSubmitting(true);
     const isCorrect = selected === question.correctAnswer;
+    const speechTask = isCorrect ? speakJapanese(card.kana) : Promise.resolve();
     try {
       await submitAnswer(card.id, isCorrect);
     } catch {
@@ -104,18 +145,15 @@ export default function StudyPage() {
     }
 
     if (isCorrect) {
-      speakJapanese(card.kana);
-      goeyToast.success("Correct", { duration: 800 });
       setIsTransitioning(true);
-      if (autoNextTimerRef.current !== null) {
-        window.clearTimeout(autoNextTimerRef.current);
+      goeyToast.success("Correct", { duration: 1400 });
+      await speechTask;
+      if (!isMountedRef.current) {
+        return;
       }
-      autoNextTimerRef.current = window.setTimeout(() => {
-        setIndex((prev) => Math.min(prev + 1, totalQuestions));
-        setSelected("");
-        setIsTransitioning(false);
-        autoNextTimerRef.current = null;
-      }, 800);
+      setIndex((prev) => Math.min(prev + 1, totalQuestions));
+      setSelected("");
+      setIsTransitioning(false);
       return;
     }
 
