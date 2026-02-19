@@ -8,6 +8,9 @@
 ## Required Stable Locators
 - `data-testid="daily-progress-value"`: shows completed count text.
 - `data-testid="streak-value"`: shows current streak.
+- `data-testid="home-title-link"`: always returns to `/`.
+- `data-testid="global-nav"`: top-level route switcher visible on all pages.
+- `data-testid="global-nav-home|study|review|collection"`: route links for cross-page navigation.
 - `data-testid="study-question"`: active prompt text.
 - `data-testid="study-option-1"` / `study-option-2`: deterministic option targets for e2e.
 - `data-correct="true|false"` on study/review options: explicit correctness locator for stable e2e actions.
@@ -24,6 +27,13 @@
 2. Assert button `Start Study` exists.
 3. Assert button `Review Due` exists.
 4. Assert `daily-progress-value` exists.
+
+## Case E2E-001b Global Navigation Works
+1. Open `/`.
+2. Click `global-nav-collection`, assert URL is `/collection`.
+3. Click `global-nav-study`, assert URL is `/study`.
+4. Click `global-nav-review`, assert URL is `/review`.
+5. Click `home-title-link`, assert URL returns to `/`.
 
 ## Case E2E-002 Bidirectional Study Flow
 1. Open `/`.

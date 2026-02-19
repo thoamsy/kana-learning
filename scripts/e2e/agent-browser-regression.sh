@@ -44,6 +44,24 @@ rg -q "Start Study" /tmp/kana-home.snapshot.txt
 rg -q "Review Due" /tmp/kana-home.snapshot.txt
 ab get text "[data-testid='daily-progress-value']" > /tmp/kana-progress-initial.txt
 
+# CASE E2E-001b Global navigation and home title routing.
+ab click "[data-testid='global-nav-collection']"
+ab wait --load networkidle
+ab get url > /tmp/kana-nav-collection-url.txt
+rg -q "/collection$" /tmp/kana-nav-collection-url.txt
+ab click "[data-testid='global-nav-study']"
+ab wait --load networkidle
+ab get url > /tmp/kana-nav-study-url.txt
+rg -q "/study$" /tmp/kana-nav-study-url.txt
+ab click "[data-testid='global-nav-review']"
+ab wait --load networkidle
+ab get url > /tmp/kana-nav-review-url.txt
+rg -q "/review$" /tmp/kana-nav-review-url.txt
+ab click "[data-testid='home-title-link']"
+ab wait --load networkidle
+ab get url > /tmp/kana-nav-home-url.txt
+rg -q "/$" /tmp/kana-nav-home-url.txt
+
 # CASE E2E-002 Bidirectional study flow.
 ab find role link click --name "Start Study"
 ab wait --load networkidle

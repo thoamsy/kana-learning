@@ -5,22 +5,31 @@ import { usePathname } from "next/navigation";
 import type { ReactElement } from "react";
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/study", label: "Study" },
-  { href: "/review", label: "Review" },
-  { href: "/collection", label: "Collection" },
+  { href: "/", label: "Home", testId: "global-nav-home" },
+  { href: "/study", label: "Study", testId: "global-nav-study" },
+  { href: "/review", label: "Review", testId: "global-nav-review" },
+  { href: "/collection", label: "Collection", testId: "global-nav-collection" },
 ];
 
 export function AppNav(): ReactElement {
   const pathname = usePathname();
 
+  function isActive(href: string): boolean {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
-    <nav className="app-nav" aria-label="Main navigation">
+    <nav className="app-nav" aria-label="Main navigation" data-testid="global-nav">
       {links.map((link) => (
         <Link
           key={link.href}
           href={link.href}
-          className={pathname === link.href ? "nav-link active" : "nav-link"}
+          data-testid={link.testId}
+          aria-current={isActive(link.href) ? "page" : undefined}
+          className={isActive(link.href) ? "nav-link active" : "nav-link"}
         >
           {link.label}
         </Link>

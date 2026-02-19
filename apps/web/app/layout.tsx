@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { AppNav } from "../src/components/app-nav";
 import { GoeyToasterProvider } from "../src/components/goey-toaster-provider";
 
 export const metadata: Metadata = {
@@ -18,8 +20,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <main id="main-content" className="container">
           <header className="app-header">
-            <h1>Kana Trainer</h1>
+            <h1>
+              <Link href="/" className="home-title-link" data-testid="home-title-link">
+                Kana Trainer
+              </Link>
+            </h1>
             <p className="subtitle">Bidirectional kana drills with emoji vocabulary</p>
+            <AppNav />
           </header>
           {children}
         </main>
