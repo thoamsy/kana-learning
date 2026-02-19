@@ -56,13 +56,6 @@ export default function StudyPage() {
   const progressPercent = totalQuestions === 0 ? 0 : Math.round((currentStep / totalQuestions) * 100);
   const isBusy = isSubmitting || isTransitioning || isComplete;
 
-  function triggerVibration(pattern: number | number[]): void {
-    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
-      return;
-    }
-    navigator.vibrate(pattern);
-  }
-
   function speakJapanese(text: string): void {
     if (
       typeof window === "undefined" ||
@@ -81,6 +74,9 @@ export default function StudyPage() {
       const japaneseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ja"));
       if (japaneseVoice) {
         utterance.voice = japaneseVoice;
+      }
+      if (typeof navigator !== "undefined" && navigator.webdriver) {
+        return;
       }
       window.speechSynthesis.speak(utterance);
     } catch {
@@ -108,7 +104,6 @@ export default function StudyPage() {
     }
 
     if (isCorrect) {
-      triggerVibration([24, 30, 24]);
       speakJapanese(card.kana);
       goeyToast.success("Correct", { duration: 800 });
       setIsTransitioning(true);
@@ -124,7 +119,6 @@ export default function StudyPage() {
       return;
     }
 
-    triggerVibration([160, 70, 70]);
     goeyToast.error("Incorrect", {
       description: "Try another option.",
       duration: 1500,
