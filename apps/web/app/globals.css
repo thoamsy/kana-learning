@@ -207,6 +207,28 @@ body {
   gap: 12px;
 }
 
+.study-topbar-right {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.study-exit-link {
+  border: 1px solid #cfdbe4;
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-decoration: none;
+  color: #284558;
+  font-size: 13px;
+  font-weight: 700;
+  background: #f5fbff;
+}
+
+.study-exit-link:hover {
+  border-color: #a8bfce;
+  background: #edf7fd;
+}
+
 .study-label {
   margin: 0;
   color: var(--ink-soft);
@@ -367,6 +389,11 @@ a:focus-visible {
 
   .study-step {
     font-size: 16px;
+  }
+
+  .study-exit-link {
+    padding: 5px 10px;
+    font-size: 12px;
   }
 
   .study-next-button {

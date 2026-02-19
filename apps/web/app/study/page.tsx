@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { goeyToast } from "goey-toast";
 import { buildQuestion, getStudyCards, submitAnswer, type QuestionMode } from "../../src/lib/trainer";
@@ -31,6 +32,9 @@ export default function StudyPage() {
       if (autoNextTimerRef.current !== null) {
         window.clearTimeout(autoNextTimerRef.current);
       }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
@@ -59,6 +63,31 @@ export default function StudyPage() {
     navigator.vibrate(pattern);
   }
 
+  function speakJapanese(text: string): void {
+    if (
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window) ||
+      typeof SpeechSynthesisUtterance === "undefined"
+    ) {
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ja-JP";
+      utterance.rate = 0.92;
+      const voices = window.speechSynthesis.getVoices();
+      const japaneseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ja"));
+      if (japaneseVoice) {
+        utterance.voice = japaneseVoice;
+      }
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Ignore speech API failures and keep the study flow responsive.
+    }
+  }
+
   async function handleNext(): Promise<void> {
     if (!card || !question || !selected || isBusy) {
       return;
@@ -80,6 +109,7 @@ export default function StudyPage() {
 
     if (isCorrect) {
       triggerVibration([24, 30, 24]);
+      speakJapanese(card.kana);
       goeyToast.success("Correct", { duration: 800 });
       setIsTransitioning(true);
       if (autoNextTimerRef.current !== null) {
@@ -115,9 +145,14 @@ export default function StudyPage() {
             Mode: <strong data-testid="question-mode">{isComplete ? "done" : mode}</strong>
           </p>
         </div>
-        <p className="study-step" data-testid="study-step">
-          {currentStep}/{totalQuestions}
-        </p>
+        <div className="study-topbar-right">
+          <Link href="/" className="study-exit-link" data-testid="study-exit-link">
+            Exit
+          </Link>
+          <p className="study-step" data-testid="study-step">
+            {currentStep}/{totalQuestions}
+          </p>
+        </div>
       </div>
 
       <div

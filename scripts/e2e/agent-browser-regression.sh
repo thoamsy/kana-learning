@@ -58,6 +58,12 @@ if cmp -s /tmp/kana-mode-1.txt /tmp/kana-mode-2.txt; then
   exit 1
 fi
 
+# CASE E2E-002b Exit link should return to home.
+ab click "[data-testid='study-exit-link']"
+ab wait --load networkidle
+ab get url > /tmp/kana-study-exit-url.txt
+rg -q "/$" /tmp/kana-study-exit-url.txt
+
 # CASE E2E-003 Progress persistence after reload.
 ab open "${BASE_URL}"
 ab wait --load networkidle
@@ -120,6 +126,18 @@ ab open "${BASE_URL}/review"
 ab wait --load networkidle
 kat_due="$(ab get text "[data-testid='review-due-count']" | tr -dc '0-9')"
 assert_gt_zero "${kat_due}"
+
+# CASE E2E-006b Study still saves after idle wait.
+ab open "${BASE_URL}/__test/reset"
+ab wait --load networkidle
+ab open "${BASE_URL}/study"
+ab wait --load networkidle
+ab wait 2500
+ab click "[data-correct='true']"
+ab click "button:has-text('Next')"
+ab wait 900
+ab get text "[data-testid='study-step']" > /tmp/kana-idle-step-after.txt
+rg -q "2/12" /tmp/kana-idle-step-after.txt
 
 # CASE E2E-007 Correct option must be shuffled and not fixed at slot 1.
 ab open "${BASE_URL}/__test/reset"

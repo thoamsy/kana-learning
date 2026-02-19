@@ -14,6 +14,7 @@
 - `data-testid="study-step"`: current step (e.g. `3/12`).
 - `data-testid="study-progress-bar"`: progress bar width reflects step.
 - `data-testid="study-complete-title"`: appears only after finishing all study questions.
+- `data-testid="study-exit-link"`: exits current study session back to home.
 - `data-testid="review-due-count"`: due cards number on review page.
 - `data-testid="review-option-1"`: deterministic review submit target.
 - `data-testid="collection-unlocked-count"`: unlocked card count.
@@ -34,6 +35,11 @@
 7. Verify question mode can switch across rounds:
    - kana -> reading
    - reading -> kana
+
+## Case E2E-002b Exit Study
+1. Open `/study`.
+2. Click `study-exit-link`.
+3. Assert URL returns to `/`.
 
 ## Case E2E-003 Progress Persistence
 1. Complete one study answer.
@@ -62,6 +68,12 @@
 4. Assert toast auto-hides within ~1.5s and step does not advance automatically.
 5. Open `/review`.
 6. Assert failed katakana item appears as due.
+
+## Case E2E-006b Idle Resume Save
+1. Open `/study`.
+2. Wait idle for a short duration.
+3. Submit one correct answer.
+4. Assert step advances to `2/12` (save + auto-next still works).
 
 ## Case E2E-007 Option Shuffle
 1. Open `/study`.
