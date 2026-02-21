@@ -122,6 +122,30 @@ ab wait --load networkidle
 unlocked="$(ab get text "[data-testid='collection-unlocked-count']" | tr -dc '0-9')"
 assert_gt_zero "${unlocked}"
 
+# CASE E2E-005b Collection ordering should prioritize recently unlocked in-group.
+ab open "${BASE_URL}/__test/reset"
+ab wait --load networkidle
+ab open "${BASE_URL}/study?script=hiragana"
+ab wait --load networkidle
+ab get text "[data-testid='study-question']" > /tmp/kana-newly-unlocked.txt
+ab click "[data-correct='true']"
+ab click "button:has-text('Next')"
+ab wait 900
+ab open "${BASE_URL}/collection"
+ab wait --load networkidle
+expected_kana="$(tr -d '\r' < /tmp/kana-newly-unlocked.txt | head -n1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+first_unlocked_kana="$(
+  ab eval '(() => {
+    const items = Array.from(document.querySelectorAll("[data-testid=\"collection-hiragana-list\"] [data-unlocked=\"true\"]"));
+    const first = items[0];
+    return first ? first.getAttribute("data-kana") ?? "" : "";
+  })()' | tr -d '"\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+)"
+if [[ "${first_unlocked_kana}" != "${expected_kana}" ]]; then
+  echo "Recent unlock ordering mismatch: expected=${expected_kana} actual=${first_unlocked_kana}" >&2
+  exit 1
+fi
+
 # CASE E2E-006 Katakana focus creates immediate due on wrong answer.
 ab open "${BASE_URL}/__test/reset"
 ab wait --load networkidle

@@ -11,6 +11,24 @@ import {
 import { DexieWebStorage, type ReviewCardProgress } from "@kana/storage";
 
 export type QuestionMode = "kana-to-reading" | "reading-to-kana";
+export interface CollectionEntry {
+  id: string;
+  script: "hiragana" | "katakana";
+  kana: string;
+  romaji: string;
+  meaning: string;
+  emoji: string;
+  unlocked: boolean;
+  reps: number;
+  firstUnlockedAt?: string;
+}
+
+export interface CollectionSnapshot {
+  total: number;
+  unlockedTotal: number;
+  hiragana: CollectionEntry[];
+  katakana: CollectionEntry[];
+}
 
 const storage = new DexieWebStorage();
 const cardById = new Map(wordCards.map((card) => [card.id, card]));
@@ -37,12 +55,16 @@ function seededShuffle<T>(items: T[], seed: string): T[] {
   return list;
 }
 
+function getCardSignature(card: Pick<EmojiWordCard, "script" | "kana" | "romaji">): string {
+  return `${card.script}:${card.kana}:${card.romaji}`;
+}
+
 function dedupeCardsByWord(cards: EmojiWordCard[]): EmojiWordCard[] {
   const seen = new Set<string>();
   const unique: EmojiWordCard[] = [];
 
   for (const card of cards) {
-    const signature = `${card.script}:${card.kana}:${card.romaji}`;
+    const signature = getCardSignature(card);
     if (seen.has(signature)) {
       continue;
     }
@@ -108,12 +130,14 @@ export async function submitAnswer(cardId: string, isCorrect: boolean): Promise<
   const next = scheduleNext({ ease: currentEase, intervalDays: currentIntervalDays, rating });
 
   const dueAt = isCorrect ? addDaysIso(nowIso, next.intervalDays) : nowIso;
+  const firstUnlockedAt = existing?.firstUnlockedAt ?? existing?.lastReviewedAt ?? nowIso;
   const progress: ReviewCardProgress = {
     cardId,
     script: cardById.get(cardId)?.script ?? "hiragana",
     ease: next.ease,
     intervalDays: next.intervalDays,
     dueAt,
+    firstUnlockedAt,
     lastReviewedAt: nowIso,
     lapses: (existing?.lapses ?? 0) + (isCorrect ? 0 : 1),
     reps: (existing?.reps ?? 0) + 1,
@@ -135,6 +159,88 @@ export async function getUnlockedCards(): Promise<EmojiWordCard[]> {
   return unlocked
     .map((item) => cardById.get(item.cardId))
     .filter((item): item is EmojiWordCard => Boolean(item));
+}
+
+function compareCollectionEntries(left: CollectionEntry, right: CollectionEntry): number {
+  if (left.unlocked !== right.unlocked) {
+    return left.unlocked ? -1 : 1;
+  }
+
+  if (left.unlocked && right.unlocked) {
+    const leftTime = left.firstUnlockedAt ? new Date(left.firstUnlockedAt).getTime() : 0;
+    const rightTime = right.firstUnlockedAt ? new Date(right.firstUnlockedAt).getTime() : 0;
+    if (leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+  }
+
+  const kanaCompare = left.kana.localeCompare(right.kana, "ja");
+  if (kanaCompare !== 0) {
+    return kanaCompare;
+  }
+  return left.romaji.localeCompare(right.romaji, "en");
+}
+
+export async function getCollectionSnapshot(): Promise<CollectionSnapshot> {
+  const uniqueCards = dedupeCardsByWord(wordCards);
+  const cardIdsBySignature = new Map<string, string[]>();
+  const representativeBySignature = new Map<string, EmojiWordCard>();
+
+  for (const card of wordCards) {
+    const signature = getCardSignature(card);
+    const ids = cardIdsBySignature.get(signature);
+    if (ids) {
+      ids.push(card.id);
+    } else {
+      cardIdsBySignature.set(signature, [card.id]);
+    }
+    if (!representativeBySignature.has(signature)) {
+      representativeBySignature.set(signature, card);
+    }
+  }
+
+  const allProgress = await storage.listAllCardProgress();
+  const progressByCardId = new Map(allProgress.map((progress) => [progress.cardId, progress]));
+
+  const entries: CollectionEntry[] = uniqueCards.map((card) => {
+    const signature = getCardSignature(card);
+    const relatedProgress = (cardIdsBySignature.get(signature) ?? [])
+      .map((id) => progressByCardId.get(id))
+      .filter((item): item is ReviewCardProgress => item !== undefined)
+      .filter((item) => item.reps > 0);
+
+    const firstUnlockedAt = relatedProgress.reduce<string | undefined>((earliest, progress) => {
+      const candidate = progress.firstUnlockedAt ?? progress.lastReviewedAt ?? progress.updatedAt;
+      if (!earliest) {
+        return candidate;
+      }
+      return new Date(candidate).getTime() < new Date(earliest).getTime() ? candidate : earliest;
+    }, undefined);
+
+    const representative = representativeBySignature.get(signature) ?? card;
+    return {
+      id: representative.id,
+      script: representative.script,
+      kana: representative.kana,
+      romaji: representative.romaji,
+      meaning: representative.meaning,
+      emoji: representative.emoji,
+      unlocked: relatedProgress.length > 0,
+      reps: relatedProgress.reduce((sum, progress) => sum + progress.reps, 0),
+      firstUnlockedAt,
+    };
+  });
+
+  const hiragana = entries.filter((entry) => entry.script === "hiragana").sort(compareCollectionEntries);
+  const katakana = entries.filter((entry) => entry.script === "katakana").sort(compareCollectionEntries);
+  const unlockedTotal = entries.filter((entry) => entry.unlocked).length;
+
+  return {
+    total: entries.length,
+    unlockedTotal,
+    hiragana,
+    katakana,
+  };
 }
 
 export async function getStats(): Promise<{ dailyProgress: number; streak: number; dueCount: number }> {
@@ -175,6 +281,7 @@ export async function resetProgress(seed: "clean" | "due" = "clean"): Promise<vo
       ease: INITIAL_EASE,
       intervalDays: 1,
       dueAt: dueIso,
+      firstUnlockedAt: nowIso,
       lastReviewedAt: nowIso,
       lapses: 0,
       reps: 1,

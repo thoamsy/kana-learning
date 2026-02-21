@@ -2,33 +2,100 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { wordCards } from "@kana/content";
-import { getUnlockedCards } from "../../src/lib/trainer";
+import { getCollectionSnapshot, type CollectionEntry, type CollectionSnapshot } from "../../src/lib/trainer";
+
+const emptySnapshot: CollectionSnapshot = {
+  total: 0,
+  unlockedTotal: 0,
+  hiragana: [],
+  katakana: [],
+};
+
+function formatUnlockDate(iso?: string): string | null {
+  if (!iso) {
+    return null;
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(iso));
+}
+
+function CollectionSection({
+  title,
+  script,
+  entries,
+}: {
+  title: string;
+  script: "hiragana" | "katakana";
+  entries: CollectionEntry[];
+}) {
+  const unlockedCount = entries.filter((entry) => entry.unlocked).length;
+  const progressPercent = entries.length === 0 ? 0 : Math.round((unlockedCount / entries.length) * 100);
+
+  return (
+    <article className="collection-section" data-testid={`collection-section-${script}`}>
+      <div className="collection-section-header">
+        <h3>{title}</h3>
+        <p>
+          <strong data-testid={`collection-${script}-unlocked`}>{unlockedCount}</strong> / {entries.length}
+        </p>
+      </div>
+      <div className="collection-progress-track" aria-hidden="true">
+        <div className="collection-progress-fill" style={{ width: `${progressPercent}%` }} />
+      </div>
+
+      <ul className="collection-grid" data-testid={`collection-${script}-list`} aria-label={`${title} words`}>
+        {entries.map((entry) => {
+          const unlockedAt = formatUnlockDate(entry.firstUnlockedAt);
+          return (
+            <li
+              key={entry.id}
+              className={entry.unlocked ? "collection-item is-unlocked" : "collection-item is-locked"}
+              data-testid={`collection-card-${entry.id}`}
+              data-script={entry.script}
+              data-kana={entry.kana}
+              data-unlocked={entry.unlocked ? "true" : "false"}
+            >
+              <div className="collection-item-top">
+                <span className="emoji">{entry.emoji}</span>
+                <span className={entry.unlocked ? "collection-status unlocked" : "collection-status locked"}>
+                  {entry.unlocked ? "Unlocked" : "Locked"}
+                </span>
+              </div>
+              <p className="collection-kana">{entry.kana}</p>
+              <p className="collection-romaji">{entry.romaji}</p>
+              <p className="collection-meaning">{entry.meaning}</p>
+              <p className="collection-meta">{entry.unlocked ? `Unlocked ${unlockedAt ?? "recently"}` : "Not learned yet"}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </article>
+  );
+}
 
 export default function CollectionPage() {
-  const [cards, setCards] = useState<Awaited<ReturnType<typeof getUnlockedCards>>>([]);
+  const [snapshot, setSnapshot] = useState<CollectionSnapshot>(emptySnapshot);
 
   useEffect(() => {
-    void getUnlockedCards().then(setCards);
+    void getCollectionSnapshot().then(setSnapshot);
   }, []);
 
-  const totalWords = wordCards.length;
-  const unlockedCount = cards.length;
-  const lockedCount = Math.max(totalWords - unlockedCount, 0);
+  const lockedCount = Math.max(snapshot.total - snapshot.unlockedTotal, 0);
 
   return (
     <section className="panel">
-      <h2>Collection</h2>
+      <h2>Collection Dictionary</h2>
       <p>
-        Unlocked: <strong data-testid="collection-unlocked-count">{unlockedCount}</strong> / {totalWords}
+        Unlocked: <strong data-testid="collection-unlocked-count">{snapshot.unlockedTotal}</strong> / {snapshot.total}
       </p>
       <p className="muted">
-        How to unlock: answer words in <strong>Study</strong> or <strong>Review</strong>. Once a word is saved to
-        your progress, it appears here.
+        Grouped by script. Inside each group, unlocked words are shown first and sorted by most recently unlocked.
       </p>
       <p className="muted">Remaining locked: {lockedCount}</p>
 
-      {unlockedCount === 0 ? (
+      {snapshot.unlockedTotal === 0 ? (
         <div className="collection-empty" data-testid="collection-empty-state">
           <p>No unlocked words yet.</p>
           <div className="cta-row">
@@ -42,15 +109,10 @@ export default function CollectionPage() {
         </div>
       ) : null}
 
-      <ul className="collection-grid" aria-label="Unlocked emoji words">
-        {cards.slice(0, 24).map((card) => (
-          <li key={card.id} className="collection-item">
-            <span className="emoji">{card.emoji}</span>
-            <span>{card.kana}</span>
-            <span className="muted">{card.romaji}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="collection-sections">
+        <CollectionSection title="Hiragana" script="hiragana" entries={snapshot.hiragana} />
+        <CollectionSection title="Katakana" script="katakana" entries={snapshot.katakana} />
+      </div>
     </section>
   );
 }

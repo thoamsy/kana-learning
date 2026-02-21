@@ -21,6 +21,7 @@
 - `data-testid="review-due-count"`: due cards number on review page.
 - `data-testid="review-option-1"`: deterministic review submit target.
 - `data-testid="collection-unlocked-count"`: unlocked card count.
+- `data-testid="collection-hiragana-list"` / `collection-katakana-list`: grouped dictionary sections.
 
 ## Case E2E-001 Home Loads
 1. Open `/`.
@@ -70,6 +71,13 @@
 2. Answer one study card correctly.
 3. Open `/collection`.
 4. Assert `collection-unlocked-count` increased.
+
+## Case E2E-005b Collection Ordering
+1. Reset clean state.
+2. Open `/study?script=hiragana`, record current kana prompt.
+3. Answer correctly once.
+4. Open `/collection`.
+5. Assert first unlocked card in `collection-hiragana-list` matches recorded kana.
 
 ## Case E2E-006 Katakana Focus
 1. Open `/study?script=katakana`.

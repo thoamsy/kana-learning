@@ -366,24 +366,128 @@ a:focus-visible {
   font-size: 18px;
 }
 
+.collection-sections {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.collection-section {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fffdf7;
+}
+
+.collection-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.collection-section-header h3 {
+  margin: 0;
+}
+
+.collection-section-header p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.collection-progress-track {
+  margin-top: 8px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #ebe3d5;
+  overflow: hidden;
+}
+
+.collection-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f2a900 0%, #f86d49 100%);
+}
+
 .collection-grid {
   list-style: none;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
+  margin-top: 12px;
 }
 
 .collection-item {
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 10px 12px;
   display: grid;
-  gap: 4px;
+  gap: 3px;
+  background: #fff;
+}
+
+.collection-item.is-locked {
+  opacity: 0.68;
+}
+
+.collection-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.collection-status {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.collection-status.unlocked {
+  color: #114b36;
+  background: #d9f3e5;
+}
+
+.collection-status.locked {
+  color: #5f6c78;
+  background: #eef2f5;
 }
 
 .emoji {
   font-size: 24px;
+}
+
+.collection-kana,
+.collection-romaji,
+.collection-meaning,
+.collection-meta {
+  margin: 0;
+}
+
+.collection-kana {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.collection-romaji {
+  font-weight: 700;
+}
+
+.collection-meaning {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.collection-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
 .muted {
@@ -469,5 +573,13 @@ a:focus-visible {
     min-height: 46px;
     font-size: 17px;
     border-radius: 12px;
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collection-kana {
+    font-size: 21px;
   }
 }

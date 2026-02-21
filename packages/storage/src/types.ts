@@ -6,6 +6,7 @@ export interface ReviewCardProgress {
   ease: number;
   intervalDays: number;
   dueAt: string;
+  firstUnlockedAt?: string;
   lastReviewedAt: string;
   lapses: number;
   reps: number;
